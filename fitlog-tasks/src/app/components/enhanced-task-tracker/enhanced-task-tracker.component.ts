@@ -2,21 +2,8 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NotificationService } from '../../services/notification.service';
-
-interface Task {
-  id: string;
-  title: string;
-  description?: string;
-  completed: boolean;
-  priority: 'low' | 'medium' | 'high';
-  dueDate?: Date;
-  createdAt: Date;
-  recurrence: 'none' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly';
-  lastCompleted?: Date;
-  completionCount: number;
-  archived: boolean;
-  nextDueDate?: Date;
-}
+import { TaskStorageService } from '../../services/task-storage.service';
+import { Task } from '../../models/task.model';
 
 @Component({
   selector: 'app-enhanced-task-tracker',
@@ -810,7 +797,10 @@ export class EnhancedTaskTrackerComponent implements OnInit, OnDestroy {
   Math = Math;
   notificationsEnabled = false;
 
-  constructor(private notificationService: NotificationService) {}
+  constructor(
+    private notificationService: NotificationService,
+    private taskStorage: TaskStorageService
+  ) {}
 
   ngOnInit() {
     this.loadTasks();
@@ -847,14 +837,21 @@ export class EnhancedTaskTrackerComponent implements OnInit, OnDestroy {
   }
 
   loadTasks() {
-    const stored = localStorage.getItem('fitlog-tasks-enhanced');
-    if (stored) {
-      this.tasks = JSON.parse(stored);
-    }
+    this.taskStorage.getTasks().subscribe({
+      next: (tasks) => {
+        this.tasks = tasks;
+        this.applyFilter();
+      },
+      error: (error) => {
+        console.error('Error loading tasks from IndexedDB:', error);
+        this.tasks = [];
+      }
+    });
   }
 
-  saveTasks() {
-    localStorage.setItem('fitlog-tasks-enhanced', JSON.stringify(this.tasks));
+  async saveTasks() {
+    // Individual task updates are handled by saveTask method
+    // This method is kept for compatibility but does nothing
   }
 
   checkRecurringTasks() {
@@ -938,6 +935,7 @@ export class EnhancedTaskTrackerComponent implements OnInit, OnDestroy {
         recurrence: this.formData.recurrence,
         dueDate: this.formData.dueDate ? new Date(this.formData.dueDate) : undefined,
         createdAt: new Date(),
+        updatedAt: new Date(),
         completionCount: 0,
         archived: false,
         nextDueDate: this.formData.recurrence !== 'none' 
