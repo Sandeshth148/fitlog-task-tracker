@@ -2,7 +2,7 @@ const { withNativeFederation, shareAll } = require('@angular-architects/native-f
 
 module.exports = withNativeFederation({
 
-  name: 'fitlog-task-tracker',
+  name: 'fitlog-tasks',
 
   exposes: {
     './Component': './src/app/features/tasks/tasks.component.ts',
