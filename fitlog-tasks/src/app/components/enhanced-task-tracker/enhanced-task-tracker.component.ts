@@ -911,54 +911,63 @@ export class EnhancedTaskTrackerComponent implements OnInit, OnDestroy {
     if (!this.formData.title.trim()) return;
 
     if (this.editingTask) {
-      const index = this.tasks.findIndex(t => t.id === this.editingTask!.id);
-      if (index !== -1) {
-        this.tasks[index] = {
-          ...this.editingTask,
-          title: this.formData.title,
-          description: this.formData.description,
-          priority: this.formData.priority,
-          recurrence: this.formData.recurrence,
-          dueDate: this.formData.dueDate ? new Date(this.formData.dueDate) : undefined,
-          nextDueDate: this.formData.recurrence !== 'none' 
-            ? this.calculateNextDueDate(this.formData.recurrence, new Date())
-            : undefined
-        };
-      }
+      const updatedTask: Task = {
+        ...this.editingTask,
+        title: this.formData.title,
+        description: this.formData.description,
+        priority: this.formData.priority,
+        recurrence: this.formData.recurrence,
+        dueDate: this.formData.dueDate ? new Date(this.formData.dueDate) : undefined,
+        nextDueDate: this.formData.recurrence !== 'none' 
+          ? this.calculateNextDueDate(this.formData.recurrence, new Date())
+          : undefined
+      };
+      
+      this.taskStorage.updateTask(updatedTask).subscribe({
+        next: () => {
+          const index = this.tasks.findIndex(t => t.id === this.editingTask!.id);
+          if (index !== -1) {
+            this.tasks[index] = updatedTask;
+          }
+          this.applyFilter();
+          this.cancelForm();
+        },
+        error: (error) => console.error('Error updating task:', error)
+      });
     } else {
-      const newTask: Task = {
-        id: Date.now().toString(),
+      const taskData = {
         title: this.formData.title,
         description: this.formData.description,
         completed: false,
         priority: this.formData.priority,
         recurrence: this.formData.recurrence,
         dueDate: this.formData.dueDate ? new Date(this.formData.dueDate) : undefined,
-        createdAt: new Date(),
-        updatedAt: new Date(),
         completionCount: 0,
         archived: false,
         nextDueDate: this.formData.recurrence !== 'none' 
           ? this.calculateNextDueDate(this.formData.recurrence, new Date())
           : undefined
       };
-      this.tasks.unshift(newTask);
-    }
-
-    this.saveTasks();
-    this.applyFilter();
-    
-    // Show notification when task is created
-    if (this.notificationsEnabled && !this.editingTask) {
-      const recurrenceText = this.formData.recurrence === 'none' ? 'one-time task' : `${this.formData.recurrence} recurring task`;
-      this.notificationService.showNotification('Task Created! ✅', {
-        body: `${this.formData.title} (${recurrenceText})`,
-        tag: 'task-created',
-        requireInteraction: false
+      
+      this.taskStorage.addTask(taskData).subscribe({
+        next: (newTask) => {
+          this.tasks.unshift(newTask);
+          this.applyFilter();
+          
+          if (this.notificationsEnabled) {
+            const recurrenceText = this.formData.recurrence === 'none' ? 'one-time task' : `${this.formData.recurrence} recurring task`;
+            this.notificationService.showNotification('Task Created! ✅', {
+              body: `${this.formData.title} (${recurrenceText})`,
+              tag: 'task-created',
+              requireInteraction: false
+            });
+          }
+          
+          this.cancelForm();
+        },
+        error: (error) => console.error('Error adding task:', error)
       });
     }
-    
-    this.cancelForm();
   }
 
   editTask(task: Task) {
@@ -975,9 +984,13 @@ export class EnhancedTaskTrackerComponent implements OnInit, OnDestroy {
 
   deleteTask(id: string) {
     if (confirm('Are you sure you want to delete this task?')) {
-      this.tasks = this.tasks.filter(t => t.id !== id);
-      this.saveTasks();
-      this.applyFilter();
+      this.taskStorage.deleteTask(id).subscribe({
+        next: () => {
+          this.tasks = this.tasks.filter(t => t.id !== id);
+          this.applyFilter();
+        },
+        error: (error) => console.error('Error deleting task:', error)
+      });
     }
   }
 
@@ -990,14 +1003,17 @@ export class EnhancedTaskTrackerComponent implements OnInit, OnDestroy {
         task.lastCompleted = new Date();
         task.completionCount = (task.completionCount || 0) + 1;
         
-        // For recurring tasks, calculate next due date
         if (task.recurrence !== 'none') {
           task.nextDueDate = this.calculateNextDueDate(task.recurrence, new Date());
         }
       }
       
-      this.saveTasks();
-      this.applyFilter();
+      this.taskStorage.updateTask(task).subscribe({
+        next: () => {
+          this.applyFilter();
+        },
+        error: (error) => console.error('Error toggling task:', error)
+      });
     }
   }
 
@@ -1005,8 +1021,12 @@ export class EnhancedTaskTrackerComponent implements OnInit, OnDestroy {
     const task = this.tasks.find(t => t.id === id);
     if (task) {
       task.archived = true;
-      this.saveTasks();
-      this.applyFilter();
+      this.taskStorage.updateTask(task).subscribe({
+        next: () => {
+          this.applyFilter();
+        },
+        error: (error) => console.error('Error archiving task:', error)
+      });
     }
   }
 
@@ -1014,8 +1034,12 @@ export class EnhancedTaskTrackerComponent implements OnInit, OnDestroy {
     const task = this.tasks.find(t => t.id === id);
     if (task) {
       task.archived = false;
-      this.saveTasks();
-      this.applyFilter();
+      this.taskStorage.updateTask(task).subscribe({
+        next: () => {
+          this.applyFilter();
+        },
+        error: (error) => console.error('Error unarchiving task:', error)
+      });
     }
   }
 
