@@ -108,6 +108,7 @@ import { Task } from '../../models/task.model';
               <label for="recurrence">Recurrence</label>
               <select id="recurrence" [(ngModel)]="formData.recurrence" name="recurrence">
                 <option value="none">None (One-time)</option>
+                <option value="2min">Every 2 Minutes (Testing)</option>
                 <option value="hourly">Hourly</option>
                 <option value="daily">Daily</option>
                 <option value="weekly">Weekly</option>
@@ -160,6 +161,7 @@ import { Task } from '../../models/task.model';
         <select [(ngModel)]="filterRecurrence" (change)="applyFilter()">
           <option value="">All Types</option>
           <option value="none">One-time</option>
+          <option value="2min">Every 2 Minutes</option>
           <option value="hourly">Hourly</option>
           <option value="daily">Daily</option>
           <option value="weekly">Weekly</option>
@@ -780,7 +782,7 @@ export class EnhancedTaskTrackerComponent implements OnInit, OnDestroy {
     title: '',
     description: '',
     priority: 'medium' as 'low' | 'medium' | 'high',
-    recurrence: 'none' as 'none' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly',
+    recurrence: 'none' as 'none' | '2min' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly',
     dueDate: ''
   };
 
@@ -850,8 +852,17 @@ export class EnhancedTaskTrackerComponent implements OnInit, OnDestroy {
   }
 
   async saveTasks() {
-    // Individual task updates are handled by saveTask method
-    // This method is kept for compatibility but does nothing
+    // Save all tasks that were updated during recurring task checks
+    const updatePromises = this.tasks
+      .filter(task => task.recurrence !== 'none' && !task.archived)
+      .map(task => this.taskStorage.updateTask(task).toPromise());
+    
+    try {
+      await Promise.all(updatePromises);
+      console.log('Recurring tasks updated successfully');
+    } catch (error) {
+      console.error('Error saving recurring tasks:', error);
+    }
   }
 
   checkRecurringTasks() {
@@ -887,6 +898,9 @@ export class EnhancedTaskTrackerComponent implements OnInit, OnDestroy {
     const next = new Date(from);
     
     switch (recurrence) {
+      case '2min':
+        next.setMinutes(next.getMinutes() + 2);
+        break;
       case 'hourly':
         next.setHours(next.getHours() + 1);
         break;

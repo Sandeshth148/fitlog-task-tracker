@@ -4,7 +4,7 @@ interface Task {
   id: string;
   title: string;
   completed: boolean;
-  recurrence: 'none' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly';
+  recurrence: 'none' | '2min' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly';
   nextDueDate?: Date;
   archived: boolean;
 }
