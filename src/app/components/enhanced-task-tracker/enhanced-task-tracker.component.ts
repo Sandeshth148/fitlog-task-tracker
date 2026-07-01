@@ -816,6 +816,7 @@ import { Task } from '../../models/task.model';
 
       .stats-grid {
         grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
       }
 
       .form-row {
@@ -828,14 +829,47 @@ import { Task } from '../../models/task.model';
 
       .task-actions {
         flex-direction: column;
+        width: 100%;
+        gap: 0.75rem;
+      }
+
+      .task-actions button {
+        width: 100%;
       }
 
       .task-item {
         flex-direction: column;
+        gap: 1rem;
+        padding: 1.25rem 1rem;
       }
 
       .task-actions-btns {
         justify-content: flex-end;
+        width: 100%;
+        border-top: 1px solid var(--color-card-border, rgba(255, 255, 255, 0.1));
+        padding-top: 0.75rem;
+        margin-top: 0.5rem;
+      }
+
+      .task-form {
+        padding: 1.5rem 1.25rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+      }
+
+      .task-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+      }
+
+      .stat-card {
+        padding: 1.25rem 1rem;
       }
     }
 

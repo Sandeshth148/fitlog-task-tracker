@@ -40,16 +40,38 @@ export class NotificationService {
       if (!granted) return;
     }
 
-    const notification = new Notification(title, {
-      icon: '/favicon.ico',
-      badge: '/favicon.ico',
-      ...options
-    });
+    // Try service worker registrations first (essential for Chrome on Android / mobile / PWAs)
+    if ('serviceWorker' in navigator) {
+      try {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        if (registrations && registrations.length > 0) {
+          await registrations[0].showNotification(title, {
+            icon: '/favicon.ico',
+            badge: '/favicon.ico',
+            ...options
+          });
+          return;
+        }
+      } catch (e) {
+        console.warn('Failed to send notification via Service Worker, falling back:', e);
+      }
+    }
 
-    notification.onclick = () => {
-      window.focus();
-      notification.close();
-    };
+    // Fallback to standard web notification
+    try {
+      const notification = new Notification(title, {
+        icon: '/favicon.ico',
+        badge: '/favicon.ico',
+        ...options
+      });
+
+      notification.onclick = () => {
+        window.focus();
+        notification.close();
+      };
+    } catch (e) {
+      console.error('Error creating Notification:', e);
+    }
   }
 
   async notifyTaskDue(taskTitle: string, recurrence: string): Promise<void> {
