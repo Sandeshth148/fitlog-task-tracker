@@ -1070,10 +1070,30 @@ export class EnhancedTaskTrackerComponent implements OnInit, OnDestroy {
     let updated = false;
 
     this.tasks.forEach(task => {
-      if (task.recurrence === 'none' || task.archived) return;
+      if (task.archived) return;
 
+      // --- One-time tasks (recurrence: none) ---
+      if (task.recurrence === 'none') {
+        if (!task.completed && task.dueDate) {
+          const due = new Date(task.dueDate);
+          if (now >= due && !task.notifiedOfDue) {
+            task.notifiedOfDue = true;
+            updated = true;
+
+            // Trigger browser notification
+            if (this.notificationsEnabled) {
+              this.notificationService.notifyTaskDue(task.title, 'One-time task');
+            }
+            // Trigger in-app glass toast
+            this.showLocalToast('Task Due! ⏰', `"${task.title}" is now due.`, 'warning');
+          }
+        }
+        return; // Skip recurring schedule logic for one-time tasks
+      }
+
+      // --- Recurring tasks ---
       if (!task.nextDueDate) {
-        task.nextDueDate = this.calculateNextDueDate(task.recurrence, now);
+        task.nextDueDate = task.dueDate ? new Date(task.dueDate) : this.calculateNextDueDate(task.recurrence, now);
         updated = true;
       }
 
@@ -1150,7 +1170,7 @@ export class EnhancedTaskTrackerComponent implements OnInit, OnDestroy {
         recurrence: this.formData.recurrence,
         dueDate: this.formData.dueDate ? new Date(this.formData.dueDate) : undefined,
         nextDueDate: this.formData.recurrence !== 'none' 
-          ? this.calculateNextDueDate(this.formData.recurrence, new Date())
+          ? (this.formData.dueDate ? new Date(this.formData.dueDate) : this.calculateNextDueDate(this.formData.recurrence, new Date()))
           : undefined
       };
       
@@ -1176,7 +1196,7 @@ export class EnhancedTaskTrackerComponent implements OnInit, OnDestroy {
         completionCount: 0,
         archived: false,
         nextDueDate: this.formData.recurrence !== 'none' 
-          ? this.calculateNextDueDate(this.formData.recurrence, new Date())
+          ? (this.formData.dueDate ? new Date(this.formData.dueDate) : this.calculateNextDueDate(this.formData.recurrence, new Date()))
           : undefined
       };
       
