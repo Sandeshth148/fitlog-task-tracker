@@ -13,6 +13,7 @@ export interface Task {
   completionCount: number;
   archived: boolean;
   nextDueDate?: Date;
+  notifiedOfDue?: boolean;
 }
 
 export interface TaskFilter {

@@ -12,7 +12,7 @@ import { Task } from '../../models/task.model';
   template: `
     <div class="task-tracker">
       <header class="task-header">
-        <h1>✅ Task Tracker Pro</h1>
+        <h1>✅ Task Tracker</h1>
         <p class="subtitle">Manage your tasks with recurring schedules</p>
       </header>
 
@@ -281,6 +281,17 @@ import { Task } from '../../models/task.model';
           Next →
         </button>
       </div>
+
+      <!-- Floating Glass Toasts -->
+      <div class="local-toast-container">
+        <div *ngFor="let toast of activeToasts" class="local-toast" [class]="toast.type">
+          <span class="toast-close" (click)="removeToast(toast.id)">×</span>
+          <div class="toast-content">
+            <span class="toast-title">{{ toast.title }}</span>
+            <span class="toast-message">{{ toast.message }}</span>
+          </div>
+        </div>
+      </div>
     </div>
   `,
   styles: [`
@@ -322,10 +333,10 @@ import { Task } from '../../models/task.model';
     }
 
     .stat-card {
-      background: var(--color-surface);
+      background: var(--color-card-bg, var(--color-surface));
       backdrop-filter: blur(var(--glass-blur)) saturate(180%);
       -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
-      border: 1px solid var(--glass-border);
+      border: 1px solid var(--color-card-border, var(--glass-border));
       border-radius: 18px;
       padding: 1.5rem 1.25rem;
       display: flex;
@@ -443,10 +454,10 @@ import { Task } from '../../models/task.model';
     }
 
     .task-form {
-      background: var(--color-surface);
+      background: var(--color-card-bg, var(--color-surface));
       backdrop-filter: blur(var(--glass-blur)) saturate(180%);
       -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
-      border: 1px solid var(--glass-border);
+      border: 1px solid var(--color-card-border, var(--glass-border));
       border-radius: 20px;
       padding: 2.5rem;
       margin-bottom: 2.5rem;
@@ -591,10 +602,10 @@ import { Task } from '../../models/task.model';
       display: flex;
       gap: 1.25rem;
       padding: 1.5rem;
-      background: var(--color-surface);
+      background: var(--color-card-bg, var(--color-surface));
       backdrop-filter: blur(var(--glass-blur)) saturate(180%);
       -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
-      border: 1px solid var(--glass-border);
+      border: 1px solid var(--color-card-border, var(--glass-border));
       border-radius: 18px;
       transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease, border-color 0.3s ease;
       box-shadow: var(--glass-shadow);
@@ -764,10 +775,10 @@ import { Task } from '../../models/task.model';
       align-items: center;
       gap: 1.25rem;
       padding: 1.25rem;
-      background: var(--color-surface);
+      background: var(--color-card-bg, var(--color-surface));
       backdrop-filter: blur(var(--glass-blur)) saturate(180%);
       -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
-      border: 1px solid var(--glass-border);
+      border: 1px solid var(--color-card-border, var(--glass-border));
       border-radius: 16px;
       box-shadow: var(--glass-shadow);
     }
@@ -790,10 +801,6 @@ import { Task } from '../../models/task.model';
 
     .btn-page:disabled {
       opacity: 0.4;
-      cursor: not-allowed;
-    }
-  `]
-      opacity: 0.5;
       cursor: not-allowed;
     }
 
@@ -831,6 +838,87 @@ import { Task } from '../../models/task.model';
         justify-content: flex-end;
       }
     }
+
+    /* Floating Glass Toasts */
+    .local-toast-container {
+      position: fixed;
+      top: 1.5rem;
+      right: 1.5rem;
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      pointer-events: none;
+      max-width: 320px;
+      width: 100%;
+    }
+
+    .local-toast {
+      pointer-events: auto;
+      background: var(--color-card-bg, rgba(255, 255, 255, 0.45));
+      backdrop-filter: blur(var(--glass-blur, 10px)) saturate(180%);
+      -webkit-backdrop-filter: blur(var(--glass-blur, 10px)) saturate(180%);
+      border: 1px solid var(--color-card-border, rgba(255, 255, 255, 0.15));
+      border-radius: 12px;
+      padding: 0.875rem 1rem;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      border-left: 4px solid var(--color-primary);
+
+      &.success {
+        border-left-color: #10b981;
+      }
+      &.warning {
+        border-left-color: #f59e0b;
+      }
+      &.info {
+        border-left-color: var(--color-primary);
+      }
+    }
+
+    .toast-close {
+      position: absolute;
+      top: 0.375rem;
+      right: 0.5rem;
+      font-size: 1rem;
+      color: var(--color-text-secondary);
+      cursor: pointer;
+      opacity: 0.7;
+      transition: opacity 0.2s;
+      &:hover { opacity: 1; }
+    }
+
+    .toast-content {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .toast-title {
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: var(--color-text);
+    }
+
+    .toast-message {
+      font-size: 0.8rem;
+      color: var(--color-text-secondary);
+      line-height: 1.4;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(120%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
   `]
 })
 export class EnhancedTaskTrackerComponent implements OnInit, OnDestroy {
@@ -863,6 +951,19 @@ export class EnhancedTaskTrackerComponent implements OnInit, OnDestroy {
 
   Math = Math;
   notificationsEnabled = false;
+  activeToasts: { id: string; title: string; message: string; type: 'success' | 'info' | 'warning' }[] = [];
+
+  showLocalToast(title: string, message: string, type: 'success' | 'info' | 'warning' = 'info') {
+    const id = Math.random().toString(36).substring(2, 9);
+    this.activeToasts.push({ id, title, message, type });
+    setTimeout(() => {
+      this.activeToasts = this.activeToasts.filter(t => t.id !== id);
+    }, 4000);
+  }
+
+  removeToast(id: string) {
+    this.activeToasts = this.activeToasts.filter(t => t.id !== id);
+  }
 
   constructor(
     private notificationService: NotificationService,
@@ -948,7 +1049,24 @@ export class EnhancedTaskTrackerComponent implements OnInit, OnDestroy {
         if (now >= nextDue) {
           task.completed = false;
           task.nextDueDate = this.calculateNextDueDate(task.recurrence, now);
+          task.notifiedOfDue = false;
           updated = true;
+        }
+      }
+
+      // Notify if task is NOT completed and has crossed next due date
+      if (!task.completed && task.nextDueDate) {
+        const nextDue = new Date(task.nextDueDate);
+        if (now >= nextDue && !task.notifiedOfDue) {
+          task.notifiedOfDue = true;
+          updated = true;
+
+          // Trigger browser notification
+          if (this.notificationsEnabled) {
+            this.notificationService.notifyTaskDue(task.title, task.recurrence);
+          }
+          // Trigger in-app glass toast
+          this.showLocalToast('Task Due! ⏰', `"${task.title}" is now due.`, 'warning');
         }
       }
     });
@@ -1033,8 +1151,10 @@ export class EnhancedTaskTrackerComponent implements OnInit, OnDestroy {
           this.tasks.unshift(newTask);
           this.applyFilter();
           
+          const recurrenceText = this.formData.recurrence === 'none' ? 'one-time task' : `${this.formData.recurrence} recurring task`;
+          this.showLocalToast('Task Created! ✅', `"${this.formData.title}" (${recurrenceText}) has been added.`, 'success');
+
           if (this.notificationsEnabled) {
-            const recurrenceText = this.formData.recurrence === 'none' ? 'one-time task' : `${this.formData.recurrence} recurring task`;
             this.notificationService.showNotification('Task Created! ✅', {
               body: `${this.formData.title} (${recurrenceText})`,
               tag: 'task-created',
@@ -1077,6 +1197,7 @@ export class EnhancedTaskTrackerComponent implements OnInit, OnDestroy {
     const task = this.tasks.find(t => t.id === id);
     if (task && !task.archived) {
       task.completed = !task.completed;
+      task.notifiedOfDue = false;
       
       if (task.completed) {
         task.lastCompleted = new Date();
@@ -1202,6 +1323,7 @@ export class EnhancedTaskTrackerComponent implements OnInit, OnDestroy {
     const granted = await this.notificationService.requestPermission();
     this.notificationsEnabled = granted;
     if (granted) {
+      this.showLocalToast('Notifications Enabled! 🔔', 'You will now receive task reminders.', 'success');
       await this.notificationService.showNotification('Notifications Enabled! 🔔', {
         body: 'You will now receive task reminders. If you don\'t see this notification, check Windows Settings → System → Notifications → Google Chrome and enable "Show notification banners".'
       });
@@ -1239,7 +1361,10 @@ export class EnhancedTaskTrackerComponent implements OnInit, OnDestroy {
       if (task) {
         task.completed = false;
         task.nextDueDate = this.calculateNextDueDate(task.recurrence, new Date());
+        task.notifiedOfDue = false;
         
+        this.showLocalToast('Task Reset 🔄', `"${task.title}" has been reset and is ready again!`, 'info');
+
         // Send browser notification
         if (this.notificationsEnabled) {
           this.notificationService.notifyTaskReset(task.title);
