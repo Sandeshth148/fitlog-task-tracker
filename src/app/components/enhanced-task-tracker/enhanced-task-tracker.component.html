@@ -1,0 +1,298 @@
+<div class="task-tracker">
+  <header class="task-header">
+    <h1><span class="emoji-icon">✅</span>Task Tracker</h1>
+    <p class="subtitle">Manage your tasks with recurring schedules</p>
+  </header>
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon">📝</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ activeTasks.length }}</div>
+        <div class="stat-label">Active Tasks</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">✅</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ completedToday }}</div>
+        <div class="stat-label">Completed Today</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🔁</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ recurringTasks.length }}</div>
+        <div class="stat-label">Recurring</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">📦</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ archivedTasks.length }}</div>
+        <div class="stat-label">Archived</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="task-actions">
+    <button class="btn-primary" (click)="showAddForm = !showAddForm">
+      {{ showAddForm ? '✕ Cancel' : '+ Add Task' }}
+    </button>
+    <button class="btn-secondary" (click)="showArchived = !showArchived">
+      {{ showArchived ? '📋 Show Active' : '📦 Show Archived' }}
+    </button>
+    <button 
+      class="btn-notification" 
+      [class.enabled]="notificationsEnabled"
+      (click)="enableNotifications()"
+      *ngIf="!notificationsEnabled"
+      title="Enable browser notifications">
+      🔔 Enable Notifications
+    </button>
+    <span class="notification-status" *ngIf="notificationsEnabled">
+      ✅ Notifications On
+    </span>
+  </div>
+
+  <!-- Task Form -->
+  <div class="task-form" *ngIf="showAddForm">
+    <h3>{{ editingTask ? 'Edit Task' : 'Add New Task' }}</h3>
+    <form (ngSubmit)="saveTask()">
+      <div class="form-group">
+        <label for="title">Title *</label>
+        <input 
+          id="title"
+          type="text" 
+          [(ngModel)]="formData.title" 
+          name="title" 
+          required
+          placeholder="e.g. Water Check"
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="description">Description</label>
+        <textarea 
+          id="description"
+          [(ngModel)]="formData.description" 
+          name="description" 
+          rows="3"
+          placeholder="e.g. Drink 250ml water"
+        ></textarea>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="priority">Priority</label>
+          <select id="priority" [(ngModel)]="formData.priority" name="priority">
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="recurrence">Recurrence</label>
+          <select id="recurrence" [(ngModel)]="formData.recurrence" name="recurrence">
+            <option value="none">One-time task</option>
+            <option value="2min">Every 2 minutes</option>
+            <option value="hourly">Hourly</option>
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+            <option value="yearly">Yearly</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group" *ngIf="formData.recurrence !== 'none'">
+        <div class="recurrence-info">
+          <div class="info-box">
+            <span class="info-icon">💡</span>
+            <span>This task will automatically reset to uncompleted and calculate its next due date based on the chosen interval after you complete it.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="dueDate">Due Date & Time *</label>
+        <input 
+          id="dueDate"
+          type="datetime-local" 
+          [(ngModel)]="formData.dueDate" 
+          name="dueDate"
+          required
+        >
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" (click)="cancelForm()">Cancel</button>
+        <button type="submit" class="btn-primary" [disabled]="!formData.title.trim() || !formData.dueDate">
+          {{ editingTask ? 'Save Changes' : 'Create Task' }}
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Filter Controls -->
+  <div class="filter-container">
+    <div class="filter-group">
+      <label>Status</label>
+      <select [(ngModel)]="filterStatus" (change)="applyFilter()">
+        <option value="all">All Tasks</option>
+        <option value="active">Active Only</option>
+        <option value="completed">Completed Only</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label>Priority</label>
+      <select [(ngModel)]="filterPriority" (change)="applyFilter()">
+        <option value="">All Priorities</option>
+        <option value="low">Low</option>
+        <option value="medium">Medium</option>
+        <option value="high">High</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label>Recurrence</label>
+      <select [(ngModel)]="filterRecurrence" (change)="applyFilter()">
+        <option value="">All Recurrences</option>
+        <option value="none">One-time only</option>
+        <option value="2min">2 Minutes</option>
+        <option value="hourly">Hourly</option>
+        <option value="daily">Daily</option>
+        <option value="weekly">Weekly</option>
+        <option value="monthly">Monthly</option>
+        <option value="yearly">Yearly</option>
+      </select>
+    </div>
+
+    <div class="filter-group search-group">
+      <label>Search</label>
+      <input 
+        type="text" 
+        [(ngModel)]="searchTerm" 
+        (ngModelChange)="applyFilter()" 
+        placeholder="Search tasks..."
+      >
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="paginatedTasks.length === 0">
+    <div class="empty-icon">📂</div>
+    <h3>No Tasks Found</h3>
+    <p>Get started by creating a new activity or check your filters!</p>
+  </div>
+
+  <!-- Tasks List -->
+  <div class="task-list" *ngIf="paginatedTasks.length > 0">
+    <div 
+      *ngFor="let task of paginatedTasks" 
+      class="task-item"
+      [class.completed]="task.completed"
+      [class.archived]="task.archived"
+      [class.high-priority]="task.priority === 'high' && !task.completed"
+      [class.recurring]="task.recurrence !== 'none' && !task.completed"
+    >
+      <div class="task-checkbox">
+        <input 
+          type="checkbox" 
+          [checked]="task.completed" 
+          (change)="toggleComplete(task.id)"
+          [disabled]="task.archived"
+        >
+      </div>
+
+      <div class="task-content">
+        <div class="task-title-row">
+          <h3 class="task-title">{{ task.title }}</h3>
+          <span class="recurrence-badge" *ngIf="task.recurrence !== 'none'">
+            🔄 {{ task.recurrence }}
+          </span>
+        </div>
+        
+        <p class="task-description" *ngIf="task.description">
+          {{ task.description }}
+        </p>
+
+        <div class="task-meta">
+          <span class="priority-badge" [class]="'priority-' + task.priority">
+            {{ task.priority }}
+          </span>
+          <span class="due-date" *ngIf="task.dueDate">
+            📅 Due: {{ formatDate(task.dueDate) }}
+          </span>
+          <span class="next-due" *ngIf="task.nextDueDate && !task.completed && task.recurrence !== 'none'">
+            ⏰ Next Due: {{ formatDate(task.nextDueDate) }}
+          </span>
+          <span class="completion-count" *ngIf="task.completionCount && task.completionCount > 0">
+            ✓ Done {{ task.completionCount }}x
+          </span>
+          <span class="last-completed" *ngIf="task.lastCompleted">
+            last: {{ formatDate(task.lastCompleted) }}
+          </span>
+        </div>
+      </div>
+
+      <div class="task-actions-btns">
+        <button 
+          class="btn-icon btn-archive" 
+          *ngIf="!task.archived"
+          (click)="archiveTask(task.id)"
+          title="Archive Task"
+        >
+          📦
+        </button>
+        <button 
+          class="btn-icon btn-unarchive" 
+          *ngIf="task.archived"
+          (click)="unarchiveTask(task.id)"
+          title="Unarchive Task"
+        >
+          📋
+        </button>
+        <button 
+          class="btn-icon btn-delete" 
+          (click)="deleteTask(task.id)"
+          title="Delete Task"
+        >
+          🗑️
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination" *ngIf="totalPages > 1">
+    <button 
+      class="btn-page" 
+      (click)="goToPage(currentPage - 1)"
+      [disabled]="currentPage === 1">
+      ← Previous
+    </button>
+    <span class="page-info">Page {{ currentPage }} of {{ totalPages }}</span>
+    <button 
+      class="btn-page" 
+      (click)="goToPage(currentPage + 1)"
+      [disabled]="currentPage === totalPages">
+      Next →
+    </button>
+  </div>
+
+  <!-- Floating Glass Toasts -->
+  <div class="local-toast-container">
+    <div *ngFor="let toast of activeToasts" class="local-toast" [class]="toast.type">
+      <span class="toast-close" (click)="removeToast(toast.id)">×</span>
+      <div class="toast-content">
+        <span class="toast-title">{{ toast.title }}</span>
+        <span class="toast-message">{{ toast.message }}</span>
+      </div>
+    </div>
+  </div>
+</div>
